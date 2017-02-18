@@ -1,27 +1,90 @@
 module Locations 
 ( LocalPath
+
 , getLocations
-, evaluateLocation
-, locationsBySize
-, compressLocation
+, getLocationsF
 , putLocations
+
+, getLinkPath
+, findLinkPath
+
+, evaluateLocation
+
+, compressLocation
+, locationsBySize
 ) where
 
 import Data.Map (Map, empty, insertWith, (!), toList)
 import Data.Char (isSpace)
 import Data.List (foldl', sortBy, stripPrefix)
 import Data.Ord (comparing, Down(Down))
+import Data.Maybe (fromJust)
+import Data.Generics.Aliases (orElse)
+
+import Control.Monad (liftM, mapM)
 
 import System.FilePath
+import System.Environment (lookupEnv)
+import System.Directory (doesFileExist)
 
 type LocalPath = String
 
 
+
+---- file IO + string parsing == file parsing
+
+getLocations :: IO (Map String FilePath)
+getLocations = getLinkPath >>= getLocationsF
+
 -- Read from a file then return contents parse by colon separated pairs
-getNestedLocations :: FilePath -> IO [(String, LocalPath)]
-getNestedLocations hLinkPath = do
-  locations <- readFile hLinkPath
-  return (parseLocations locations)
+getNestedLocationsF :: FilePath -> IO [(String, LocalPath)]
+getNestedLocationsF = liftM parseLocations . readFile
+
+-- performs getNestedLocations then convert terms to absolutepaths
+getLocationsF :: FilePath -> IO (Map String FilePath)
+getLocationsF = liftM unnestLocations . getNestedLocationsF
+
+
+-- recompress and store as if the output of getLocations
+putLocations :: FilePath -> Map String FilePath -> IO ()
+putLocations hLinkPath = writeFile hLinkPath . compressAndFormat
+
+
+-- of note: getLocationsF a >>= putLocations b
+-- optimizes the compression of the set of names in file a, outputting to file b
+
+
+
+---- getLinkPath :: IO FilePath
+
+-- perform findLinkPath or fail without grace
+getLinkPath :: IO FilePath
+getLinkPath = liftM fromJust findLinkPath
+
+-- Read from environment variable or search paths for .hLinks
+findLinkPath :: IO (Maybe FilePath)
+findLinkPath = do
+  envPath <- lookupEnv "hLinkPath"
+  foundPaths <- searchLinkPaths
+  return $ foldr orElse Nothing $ envPath : foundPaths
+
+
+-- search paths for .hLinks
+searchLinkPaths :: IO [Maybe FilePath]
+searchLinkPaths = getSearchPath >>= mapM checkLinkPath
+
+-- check if .hLinks is at a path and if it is return the .hLinks path
+checkLinkPath :: FilePath -> IO (Maybe FilePath)
+checkLinkPath path = do
+  isGoodPath <- doesFileExist hLinksPath
+  if isGoodPath
+     then return $ Just hLinksPath
+     else return Nothing
+  where hLinksPath = path </> "" <.> "hLink"
+
+
+
+---- File -> Map
 
 -- Pure part of getNestedLocations - parse string by colon separated pairs
 parseLocations :: String -> [(String, LocalPath)]
@@ -30,18 +93,6 @@ parseLocations = map parseEach . filter (elem ':') . lines
         parseEach line = (location, dropDelim path)
           where (location, path) = break (== ':') line
 
-
--- inverse of compressLocation - turns a localpath into an absolute path
-evaluateLocation :: Map String FilePath -> LocalPath -> FilePath
-evaluateLocation paths path = paths ! pathHead </> dropWhile isPathSeparator pathTail
-  where (pathHead, pathTail) = break isPathSeparator path
-
-
--- performs getNestedLocations then convert terms to absolutepaths
-getLocations :: FilePath -> IO (Map String FilePath)
-getLocations hLinkPath = do
-  nested <- getNestedLocations hLinkPath
-  return (unnestLocations nested)
 
 -- pure part of getLocations -- convert locals to absolutes, using each conversion to convert the following lines
 unnestLocations :: [(String, LocalPath)] -> Map String FilePath
@@ -52,16 +103,23 @@ unnestLocations = foldl' foldWith empty
                            else evaluateLocation paths path
 
 
--- sort the output of getLocations by length of path in steps; useful for undoing unnestLocations
-locationsBySize :: Map String FilePath -> [(String, FilePath)] 
--- descending by number of directories in path
-locationsBySize = sortBy (comparing (Down . length . splitPath . snd)) . toList
+-- inverse of compressLocation - turns a localpath into an absolute path
+evaluateLocation :: Map String FilePath -> LocalPath -> FilePath
+evaluateLocation paths path = paths ! pathHead </> dropWhile isPathSeparator pathTail
+  where (pathHead, pathTail) = break isPathSeparator path
+
+
+
+---- Map -> File
+
+-- pure part of putLocations
+compressAndFormat :: Map String FilePath -> String
+compressAndFormat = unlines . reverse . map (\(name, path) -> name ++ ": " ++ path) . nestLocations . locationsBySize
 
 -- translate from the output of locationsBySize into the output of unnestLocations
 nestLocations :: [(String, FilePath)] -> [(String, LocalPath)]
 nestLocations paths = foldr compressAndAdd [] paths
   where compressAndAdd (locname, path) acc = (locname, compressLocation paths path) : acc
-
 
 compressLocation :: [(String, FilePath)] -> FilePath -> LocalPath
 -- you may want to make sure pathSeparators are consistent first
@@ -74,14 +132,11 @@ compressLocation paths path = foldr shortingFold path paths
                                  else tryRest
 
 
--- recompress and store the output of getLocations
-putLocations :: FilePath -> Map String FilePath -> IO ()
-putLocations hLinkPath = writeFile hLinkPath . compressAndFormat
+-- sort the output of getLocations by length of path in steps; useful for undoing unnestLocations
+locationsBySize :: Map String FilePath -> [(String, FilePath)] 
+-- descending by number of directories in path
+locationsBySize = sortBy (comparing (Down . length . splitPath . snd)) . toList
 
--- pure part of putLocations
-compressAndFormat :: Map String FilePath -> String
-compressAndFormat = unlines . reverse . map (\(name, path) -> name ++ ": " ++ path) . nestLocations . locationsBySize
 
--- of note: getLocations a >>= putLocations b
--- optimizes the compression of the set of names in file a, outputting to file b
+
 

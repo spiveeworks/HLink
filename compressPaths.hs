@@ -13,7 +13,7 @@ main = do
 compressEach :: FilePath -> IO ()
 compressEach extern = do
   let extern' = extern ++ ".swp"
-  uncompressed <- getLocations extern
+  uncompressed <- getLocationsF extern
   putLocations extern' uncompressed
   removeFile extern
   renameFile extern' extern
