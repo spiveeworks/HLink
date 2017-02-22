@@ -128,12 +128,18 @@ nestLocations paths = foldr compressAndAdd [] paths
 compressLocation :: CompMap -> FilePath -> LocalPath
 -- you may want to make sure pathSeparators are consistent first
 compressLocation paths path = foldr shortingFold path paths
-  where shortingFold (basename, basepath) tryRest = case stripPrefix basepath path of
+  where shortingFold (basename, basepath) tryRest = case stripPrefixP basepath path of
           Nothing -> tryRest
           Just pathTail -> let pathTail' = dropWhile isPathSeparator pathTail
                            in if (not . null) pathTail'
                                  then basename </> pathTail'
                                  else tryRest
+
+--  like stripPrefix but makes sure that a directory name doesn't get split in two
+--  would be more efficient to reimplement from foldr I guess?
+stripPrefixP :: FilePath -> FilePath -> Maybe FilePath
+stripPrefixP basepath = stripPrefix basepath'
+  where basepath' = init $ basepath </> "*"
 
 
 -- sort the output of getLocations by length of path in steps; useful for undoing unnestLocations
