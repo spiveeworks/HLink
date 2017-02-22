@@ -4,7 +4,7 @@ import System.Directory
 
 import Control.Monad
 
-import Locations
+import PathCompression
 
 main = do
   externs <- getArgs
@@ -13,8 +13,8 @@ main = do
 compressEach :: FilePath -> IO ()
 compressEach extern = do
   let extern' = extern ++ ".swp"
-  uncompressed <- getLocationsF extern
-  putLocations extern' uncompressed
+  (comp, eval) <- getPathMapsF extern
+  putCompMapF extern' comp
   removeFile extern
   renameFile extern' extern
 

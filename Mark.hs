@@ -4,14 +4,14 @@ import System.FilePath
 
 import Control.Monad
 
-import Locations
+import PathCompression
 
 --mark folder(s) for linking
 main = do
-  unpaths <- liftM locationsBySize getLocations
+  (comp, eval) <- getPathMaps
   externs <- getArgs
-  forM externs $ markEach unpaths
+  forM externs $ markEach comp
 
 markEach :: CompMap -> FilePath -> IO ()
-markEach unpaths extern = appendFile (extern </> "" <.> "links") . compressLocation unpaths $ (extern ++ "\n")
+markEach comp extern = appendFile (extern </> "" <.> "links") . compressPath comp $ (extern ++ "\n")
 
