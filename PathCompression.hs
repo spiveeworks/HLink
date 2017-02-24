@@ -150,7 +150,7 @@ compressPath paths path = foldr shortingFold path paths
                            in if (not . null) pathTail'
                                  then basename </> pathTail'
                                  else tryRest
-        stripPrefixP basepath = stripPrefix . init $ basepath </> "*"                
+        stripPrefixP = stripPrefix . addTrailingPathSeparator          
 
 
 evaluatePath :: EvalMap -> FilePath' -> FilePath
