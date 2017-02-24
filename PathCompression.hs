@@ -60,7 +60,7 @@ getPathMapsF = liftM convert . getNestMapF
 
 -- Read from a file then return contents parse by colon separated pairs
 getNestMapF :: FilePath -> IO NestMap
-getNestMapF = liftM read . readFile
+getNestMapF = liftM readNest . readFile
 
 
 
@@ -68,7 +68,7 @@ getNestMapF = liftM read . readFile
 
 -- gets a CompMap and reformats it ready to be read by getLocationsF
 putCompMapF :: FilePath -> CompMap -> IO ()
-putCompMapF hLinkPath = writeFile hLinkPath . show . toNest
+putCompMapF hLinkPath = writeFile hLinkPath . showNest . toNest
 
 
 
