@@ -1,6 +1,7 @@
 import System.Environment
 import System.IO
 import System.FilePath
+import System.Directory
 
 import Control.Monad
 
@@ -13,5 +14,13 @@ main = do
   forM externs $ markEach comp
 
 markEach :: CompMap -> FilePath -> IO ()
-markEach comp extern = appendFile (extern </> "" <.> "links") . compressPath comp $ (extern ++ "\n")
+markEach comp path = do
+  pathIsFile <- doesFileExist path
+  appendFile (linkPath pathIsFile path) (linkLine pathIsFile comp path)
+
+linkPath False = \ path -> path </> "" <.> "links"
+linkPath True = linkPath False . takeDirectory
+
+linkLine False = compressPath
+linkLine True = \ comp path -> compressPath comp path ++ ": " ++ takeFileName path
 
