@@ -8,17 +8,18 @@ import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 
+import System.FilePath (splitDirectories)
 
-data Link = Root FilePath | Relative FilePath FilePath | Switch String FilePath FilePath
+data Link = Link FilePath FilePath -- basically (source, dest)
 
 readLink x = case map (dropWhile isSpace) (splitOn ":" x) of
-               [extern] -> Root extern
-               [extern, intern] -> Relative extern intern
-               [name, extern, switchloc] -> Switch name extern switchloc
+               [extern] -> Link extern "."
+               [extern, intern] -> Link extern intern
 
 showLink = intercalate ": " . getList
-  where getList (Root extern) = [extern]
-        getList (Relative extern intern) = [extern, intern]
-        getList (Switch name extern switchloc) = [name, extern, switchloc]
+  where getList (Link extern intern) 
+          | splitDirectories intern == ["."] = [extern]
+          | intern == "" = [extern]
+          | otherwise = [extern, intern]
 
 

@@ -22,8 +22,5 @@ parse :: EvalMap -> [String] -> [Link]
 parse eval = map readLink . lines
 
 createLink :: Link -> IO ()
-createLink (Root path) = makeLink path "."
-createLink (Relative source dest) = makeLink source dest
-createLink (Switch name source switch) = do
-  makeLink source dest
+createLink (Link source dest) = makeLink source dest
   
