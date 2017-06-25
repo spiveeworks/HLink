@@ -12,11 +12,18 @@ main = do
   args <- getArgs
   forM args $ mountEach eval
 
+mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
   contents <- readFile (path </> "" <.> "links")
   let instructions = parse eval contents
   forM instructions createLink
 
+parse :: EvalMap -> [String] -> [Link]
 parse eval = map readLink . lines
 
-createLink link = return ()
+createLink :: Link -> IO ()
+createLink (Root path) = makeLink path "."
+createLink (Relative source dest) = makeLink source dest
+createLink (Switch name source switch) = do
+  makeLink source dest
+  
