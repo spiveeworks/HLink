@@ -1,4 +1,4 @@
-HLINK=mark
+HLINK=mark mount
 MISC=compressPaths
 
 
