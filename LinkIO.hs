@@ -24,10 +24,12 @@ prettyDotLinkSeparator :: String
 prettyDotLinkSeparator = pretty dotLinkSeparator
   where pretty str = " " ++ str ++ " "
 
-readLink :: String -> Link
+readLink :: String -> Maybe Link
 readLink x = case map trim (splitOn dotLinkSeparator x) of
-               [extern] -> Link extern "."
-               [extern, intern] -> Link extern intern
+               ("" : _) -> Nothing
+               [extern] -> Just $ Link extern "."
+               [extern, intern] -> Just $ Link extern intern
+               _ -> Nothing
   where trim = revDrop . revDrop
         revDrop = reverse . dropWhile isSpace
 

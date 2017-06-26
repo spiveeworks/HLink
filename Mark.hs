@@ -19,7 +19,14 @@ main = do
 markEach :: CompMap -> FilePath -> IO ()
 markEach comp path = do
   pathIsFile <- doesFileExist path
-  appendFile (linkPath pathIsFile path) (linkLine pathIsFile comp path)
+  appendFile' (linkPath pathIsFile path) (linkLine pathIsFile comp path)
+
+appendFile' :: FilePath -> String -> IO ()
+appendFile' file str = do
+  exists <- doesFileExist file
+  let join = if exists then "\n"
+                       else ""
+  appendFile file $ join ++ str
 
 linkPath False = \ path -> path </> "" <.> "links"
 linkPath True = linkPath False . takeDirectory

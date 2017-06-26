@@ -152,6 +152,7 @@ compressPath paths path = foldr shortingFold path paths
 
 
 evaluatePath :: EvalMap -> FilePath' -> FilePath
+evaluatePath _ "" = ""
 evaluatePath paths path 
   | hasDrive path || head path `elem` ['.', '~'] = path
   | otherwise = paths ! pathHead </> dropWhile isPathSeparator pathTail

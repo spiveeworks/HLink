@@ -7,7 +7,7 @@ import System.Directory
 
 import Control.Monad
 
-import Data.Maybe (isJust)
+import Data.Maybe (catMaybes, isJust)
 
 import PathCompression
 import LinkIO
@@ -24,7 +24,7 @@ mountEach eval path = do
   withCurrentDirectory path $ forM_ instructions attemptLink
 
 parse :: EvalMap -> String -> [Link]
-parse eval = map (mapLinkSource doEval) . map readLink . lines
+parse eval = map (mapLinkSource doEval) . catMaybes . map readLink . lines
   where doEval = evaluatePath eval
 
 
