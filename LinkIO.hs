@@ -1,5 +1,8 @@
 module LinkIO
-( Link(Link)
+( dotLinkSeparator
+, prettyDotLinkSeparator
+
+, Link(Link)
 , readLink
 , showLink
 
@@ -14,14 +17,20 @@ import System.FilePath (splitDirectories)
 
 data Link = Link FilePath FilePath -- basically (source, dest)
 
+dotLinkSeparator :: String
+dotLinkSeparator = "->"
+
+prettyDotLinkSeparator :: String
+prettyDotLinkSeparator = pretty dotLinkSeparator
+  where pretty str = " " ++ str ++ " "
 
 readLink :: String -> Link
-readLink x = case map (dropWhile isSpace) (splitOn ":" x) of
+readLink x = case map (dropWhile isSpace) (splitOn dotLinkSeparator x) of
                [extern] -> Link extern "."
                [extern, intern] -> Link extern intern
 
 showLink :: Link -> String
-showLink = intercalate ": " . getList
+showLink = intercalate (prettyDotLinkSeparator) . getList
   where getList (Link extern intern) 
           | splitDirectories intern == ["."] = [extern]
           | intern == "" = [extern]
