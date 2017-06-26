@@ -18,8 +18,9 @@ mountEach eval path = do
   let instructions = parse eval contents
   forM instructions attemptLink
 
-parse :: EvalMap -> [String] -> [Link]
-parse eval = map readLink . lines
+parse :: EvalMap -> String -> [Link]
+parse eval = map (fmap doEval) . map readLink . lines
+  where doEval = evaluatePath eval
 
 
 -- Creates a symbolic link as requested, unless something other than a symbolic link is in the way.

@@ -12,6 +12,9 @@ import System.FilePath (splitDirectories)
 
 data Link = Link FilePath FilePath -- basically (source, dest)
 
+instance Functor Link where
+  fmap f (Link source dest) = Link source (f dest)
+
 readLink x = case map (dropWhile isSpace) (splitOn ":" x) of
                [extern] -> Link extern "."
                [extern, intern] -> Link extern intern
