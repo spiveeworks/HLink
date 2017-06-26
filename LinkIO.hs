@@ -3,7 +3,7 @@ module LinkIO
 , readLink
 , showLink
 
-, applyLinkDest
+, mapLinkSource
 ) where
 
 import Data.Char (isSpace)
@@ -28,6 +28,6 @@ showLink = intercalate ": " . getList
           | otherwise = [extern, intern]
 
 
-applyLinkDest :: (FilePath -> FilePath) -> Link -> Link
-applyLinkDest f (Link source dest) = Link source (f dest)
+mapLinkSource :: (FilePath -> FilePath) -> Link -> Link
+mapLinkSource f (Link source dest) = Link (f source) dest
 

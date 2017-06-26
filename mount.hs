@@ -22,7 +22,7 @@ mountEach eval path = do
   forM_ instructions attemptLink
 
 parse :: EvalMap -> String -> [Link]
-parse eval = map (applyLinkDest doEval) . map readLink . lines
+parse eval = map (mapLinkSource doEval) . map readLink . lines
   where doEval = evaluatePath eval
 
 
