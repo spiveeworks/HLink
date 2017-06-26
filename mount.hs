@@ -1,8 +1,11 @@
 import System.Environment
 import System.IO
 import System.FilePath
+import System.Directory
 
 import Control.Monad
+
+import Data.Maybe (isJust)
 
 import PathCompression
 import LinkIO
@@ -16,10 +19,10 @@ mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
   contents <- readFile (path </> "" <.> "links")
   let instructions = parse eval contents
-  forM instructions attemptLink
+  forM_ instructions attemptLink
 
 parse :: EvalMap -> String -> [Link]
-parse eval = map (fmap doEval) . map readLink . lines
+parse eval = map (applyLinkDest doEval) . map readLink . lines
   where doEval = evaluatePath eval
 
 
@@ -28,21 +31,22 @@ attemptLink :: Link -> IO ()
 attemptLink (Link source dest) = do
   is_used <- doesPathExist source
   is_available <- if is_used
-                    then clearIfRemovableAndPrint source
+                    then clearIfSymbolicAndPrint source
                     else return True
   when is_available $ do
     createDirectoryLink dest source
     putStrLn $ "Successfully created link at " ++ source
- where clearIfRemovableAndPrint source = do
-         m_old_dest <- clearIfRemovable
+ where clearIfSymbolicAndPrint source = do
+         m_old_dest <- clearIfSymbolic source
          putStrLn $ case m_old_dest of
            Just old_dest -> "Removed old link: " ++ source ++ " -> " ++ old_dest
            Nothing -> "Failed to create link at: " ++ source
+         return $ isJust m_old_dest
 
 
 -- Removes symbolic links and reports their target, does not remove actual files/directories
-clearIfRemovable :: FilePath -> String -> String -> IO (Maybe FilePath)
-clearIfRemovable path rem_msg non_rem_msg = do
+clearIfSymbolic :: FilePath -> IO (Maybe FilePath)
+clearIfSymbolic path = do
   result <- pathIsSymbolicLink path
   if result
     then do old_dest <- getSymbolicLinkTarget path
