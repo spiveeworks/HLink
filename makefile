@@ -8,7 +8,7 @@ hlink: $(HLINK)
 misc: $(MISC)
 
 $(HLINK) $(MISC):
-	ghc -outputdir output -o binaries/$@ --make $@
+	ghc -outputdir output -o binaries/$@ --make Main.hs -main-is $@
 
 
 #       #

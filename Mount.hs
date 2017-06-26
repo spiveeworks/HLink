@@ -1,3 +1,5 @@
+module Mount (main) where
+
 import System.Environment
 import System.IO
 import System.FilePath
