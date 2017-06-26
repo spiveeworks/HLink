@@ -37,7 +37,9 @@ attemptLink (Link source dest) = do
                     else return True
   when is_available $ do
     dest' <- makeAbsolute dest
-    createDirectoryLink dest' source
+    is_file <- doesFileExist dest'
+    if is_file then createFileLink      dest' source
+               else createDirectoryLink dest' source
     putStrLn $ "Successfully created link at " ++ source
  where clearIfSymbolicAndPrint source = do
          m_old_dest <- clearIfSymbolic source
