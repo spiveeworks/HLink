@@ -124,9 +124,7 @@ showNest = unlines . reverse . map showEach
 toEval :: NestMap -> EvalMap
 toEval = foldl' foldWith empty
   where foldWith paths (location, path) = insertWith (flip const) location path' paths
-          where path' = if hasDrive path 
-                           then path 
-                           else evaluatePath paths path
+          where path' = evaluatePath paths path
 
 
 toComp :: EvalMap -> CompMap
@@ -154,7 +152,9 @@ compressPath paths path = foldr shortingFold path paths
 
 
 evaluatePath :: EvalMap -> FilePath' -> FilePath
-evaluatePath paths path = paths ! pathHead </> dropWhile isPathSeparator pathTail
+evaluatePath paths path 
+  | hasDrive path || head path `elem` ['.', '~'] = path
+  | otherwise = paths ! pathHead </> dropWhile isPathSeparator pathTail
   where (pathHead, pathTail) = break isPathSeparator path
 
 
