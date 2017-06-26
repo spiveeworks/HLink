@@ -19,7 +19,7 @@ mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
   contents <- readFile (path </> "" <.> "links")
   let instructions = parse eval contents
-  forM_ instructions attemptLink
+  withCurrentDirectory path $ forM_ instructions attemptLink
 
 parse :: EvalMap -> String -> [Link]
 parse eval = map (mapLinkSource doEval) . map readLink . lines
@@ -34,7 +34,8 @@ attemptLink (Link source dest) = do
                     then clearIfSymbolicAndPrint source
                     else return True
   when is_available $ do
-    createDirectoryLink dest source
+    dest' <- makeAbsolute dest
+    createDirectoryLink dest' source
     putStrLn $ "Successfully created link at " ++ source
  where clearIfSymbolicAndPrint source = do
          m_old_dest <- clearIfSymbolic source
