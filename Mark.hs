@@ -8,7 +8,7 @@ import System.Directory
 import Control.Monad
 
 import PathCompression
-import LinkIO (prettyDotLinkSeparator)
+import LinkIO
 
 --mark folder(s) for linking
 main :: IO ()
@@ -20,7 +20,11 @@ main = do
 markEach :: CompMap -> FilePath -> IO ()
 markEach comp path = do
   pathIsFile <- doesFileExist path
-  appendFile' (linkPath pathIsFile path) (linkLine pathIsFile comp path)
+  let dirPath = if pathIsFile then takeDirectory path
+                              else path
+  let dotLinkPath = dirPath </> "" <.> "links"
+  let linkLine = showLink . compressLink comp dirPath $ path :=>: path
+  appendFile' dotLinkPath linkLine
 
 appendFile' :: FilePath -> String -> IO ()
 appendFile' file str = do
@@ -28,12 +32,4 @@ appendFile' file str = do
   let join = if exists then "\n"
                        else ""
   appendFile file $ join ++ str
-
-linkPath :: Bool -> FilePath -> FilePath
-linkPath False = \ path -> path </> "" <.> "links"
-linkPath True = linkPath False . takeDirectory
-
-linkLine :: Bool -> CompMap -> FilePath -> String
-linkLine False = compressPath
-linkLine True = \ comp path -> compressPath comp path ++ prettyDotLinkSeparator ++ takeFileName path
 

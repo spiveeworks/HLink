@@ -7,7 +7,7 @@ import System.Directory
 
 import Control.Monad
 
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (isJust)
 
 import PathCompression
 import LinkIO
@@ -21,24 +21,19 @@ main = do
 mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
   contents <- readFile (path </> "" <.> "links")
-  let instructions = parse eval contents
-  withCurrentDirectory path $ forM_ instructions attemptLink
-
-parse :: EvalMap -> String -> [Link]
-parse eval = map (mapLinkSource doEval) . catMaybes . map readLink . lines
-  where doEval = evaluatePath eval
+  let instructions = parseLinks eval path contents
+  forM_ instructions attemptLink
 
 
 -- Creates a symbolic link as requested, unless something other than a symbolic link is in the way.
 attemptLink :: Link -> IO ()
-attemptLink (Link source dest) = do
+attemptLink (source :=>: dest) = do
   is_used <- doesPathExist source
   is_available <- if is_used
                     then clearIfSymbolicAndPrint source
                     else return True
   when is_available $ do
-    dest' <- makeAbsolute dest
-    createDirectoryLink dest' source
+    createDirectoryLink dest source
     putStrLn $ "Successfully created link at " ++ source
  where clearIfSymbolicAndPrint source = do
          m_old_dest <- clearIfSymbolic source
