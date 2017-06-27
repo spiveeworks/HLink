@@ -11,10 +11,11 @@ import PathCompression
 import LinkIO (prettyDotLinkSeparator)
 
 --mark folder(s) for linking
+main :: IO ()
 main = do
   (comp, eval) <- getPathMaps
   externs <- getArgs
-  forM externs $ markEach comp
+  forM_ externs $ markEach comp
 
 markEach :: CompMap -> FilePath -> IO ()
 markEach comp path = do
@@ -28,9 +29,11 @@ appendFile' file str = do
                        else ""
   appendFile file $ join ++ str
 
+linkPath :: Bool -> FilePath -> FilePath
 linkPath False = \ path -> path </> "" <.> "links"
 linkPath True = linkPath False . takeDirectory
 
+linkLine :: Bool -> CompMap -> FilePath -> String
 linkLine False = compressPath
 linkLine True = \ comp path -> compressPath comp path ++ prettyDotLinkSeparator ++ takeFileName path
 

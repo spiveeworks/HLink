@@ -8,9 +8,10 @@ import Control.Monad
 
 import PathCompression
 
+main :: IO ()
 main = do
   externs <- getArgs
-  forM externs compressEach
+  forM_ externs compressEach
 
 compressEach :: FilePath -> IO ()
 compressEach extern = do

@@ -108,12 +108,14 @@ checkLinkPath path = do
 
 ---- String <-> NestMap
 
+readNest :: String -> NestMap
 readNest = map parseEach . filter (elem hLinkSeparator) . lines
   where dropDelim = dropWhile isSpace . tail
         parseEach line = (location, dropDelim path)
           where (location, path) = break (== hLinkSeparator) line
 
 
+showNest :: NestMap -> String
 showNest = unlines . reverse . map showEach
   where showEach (name, path) = name ++ hLinkSeparator : " " ++ path
 
@@ -139,8 +141,8 @@ toNest paths = foldr compressAndAdd [] paths
 
 ---- PathMap usage - FilePath compression
 
+-- you may want to make sure pathSeparators are consistent when using this
 compressPath :: CompMap -> FilePath -> FilePath'
--- you may want to make sure pathSeparators are consistent first
 compressPath paths path = foldr shortingFold path paths
   where shortingFold (basename, basepath) tryRest = case stripPrefixP basepath path of
           Nothing -> tryRest

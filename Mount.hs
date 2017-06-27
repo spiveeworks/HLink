@@ -12,10 +12,11 @@ import Data.Maybe (catMaybes, isJust)
 import PathCompression
 import LinkIO
 
+main :: IO ()
 main = do
   (comp, eval) <- getPathMaps
   args <- getArgs
-  forM args $ mountEach eval
+  forM_ args $ mountEach eval
 
 mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
