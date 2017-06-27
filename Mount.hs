@@ -10,7 +10,8 @@ import Control.Monad
 import Data.Maybe (isJust)
 
 import PathCompression
-import LinkIO
+import LinkParsing (Link((:=>:)))
+import LinkIO (getLinks)
 
 main :: IO ()
 main = do
@@ -20,8 +21,7 @@ main = do
 
 mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
-  contents <- readFile (path </> "" <.> "links")
-  let instructions = parseLinks eval path contents
+  instructions <- getLinks eval path
   forM_ instructions attemptLink
 
 

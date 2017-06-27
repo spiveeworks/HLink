@@ -1,75 +1,92 @@
 module LinkIO
-( RelativeLink((:->:))
-, Link((:=>:))
+( getDotLinkIn
 
-, evaluateLink
-, compressLink
+, getLinksNear
+, getLinks
+, getLinksIn
+, getLinksWith
 
-, dotLinkSeparator
-, prettyDotLinkSeparator
-, readLink
-, showLink
-, parseLinks
-, formatLinks
+, appendLinksNear
+, appendLinks
+, appendLinksIn
+, appendLinksWith
 ) where
 
-import Data.Char (isSpace)
-import Data.List (intercalate)
-import Data.List.Split (splitOn)
-import Data.Maybe (mapMaybe)
-
+import System.Directory
 import System.FilePath
 
-import PathCompression
+import LinkParsing
+import PathCompression (CompMap, EvalMap)
 
-data RelativeLink = FilePath' :->: FilePath -- compressed source and relative dest
-data Link         = FilePath  :=>: FilePath -- valid source and absolute destination
 
------- Link Conversion
+------ File Operations
 
-evaluateLink :: EvalMap -> FilePath -> RelativeLink -> Link
-evaluateLink eval cd (source :->: dest) = evaluatePath eval source :=>: makeAbsoluteWith cd dest
-  where makeAbsoluteWith cd path = normalise path'
-          where path' = if isRelative path then cd </> path
-                                           else path
+---- File finding
 
-compressLink :: CompMap -> FilePath -> Link -> RelativeLink
-compressLink comp cd (source :=>: dest) = compressPath comp source :->: makeRelative cd dest
+appendDotLink :: FilePath -> FilePath
+appendDotLink path = path </> "" <.> "links"
 
------- Link Reading/Writing
+getDotLinkIn :: FilePath -> IO (Maybe FilePath)
+getDotLinkIn path = do
+  let dotLink = appendDotLink path
+  dotLinkExists <- doesFileExist dotLink
+  return $ if dotLinkExists then Just dotLink
+                            else Nothing
 
----- Separator
+getNearestDir :: FilePath -> IO FilePath
+getNearestDir path = do
+  isFile <- doesFileExist path
+  return $ if isFile then takeDirectory path
+                     else path
+  
 
-dotLinkSeparator :: String
-dotLinkSeparator = "->"
+---- File Reading
 
-prettyDotLinkSeparator :: String
-prettyDotLinkSeparator = pretty dotLinkSeparator
-  where pretty str = " " ++ str ++ " "
+-- Takes a directory or file path and parses an adjacent .links if any
+getLinksNear :: EvalMap -> FilePath -> IO [Link]
+getLinksNear eval path = getNearestDir path >>= getLinksIn eval
 
----- String <-> RelativeLink
+-- Takes a .links file and parses it
+getLinks :: EvalMap -> FilePath -> IO [Link]
+getLinks eval filePath = getLinksWith eval dirPath filePath
+  where dirPath = takeDirectory filePath
 
-readLink :: String -> Maybe RelativeLink
-readLink x = case map trim (splitOn dotLinkSeparator x) of
-               ("" : _) -> Nothing
-               [extern] -> Just $ extern :->: "."
-               [extern, intern] -> Just $ extern :->: intern
-               _ -> Nothing
-  where trim = revDrop . revDrop
-        revDrop = reverse . dropWhile isSpace
+-- Takes a directory and parses a contained .links if any
+getLinksIn :: EvalMap -> FilePath -> IO [Link]
+getLinksIn eval dirPath = do
+  mFilePath <- getDotLinkIn dirPath
+  case mFilePath of
+    Nothing -> return []
+    Just filePath -> getLinksWith eval dirPath filePath
 
-showLink :: RelativeLink -> String
-showLink = intercalate (prettyDotLinkSeparator) . getList
-  where getList (extern :->: intern) 
-          | intern `equalFilePath` "." = [extern]
-          | intern == "" = [extern]
-          | otherwise = [extern, intern]
+-- Like parseLinks but with a FilePath instead of a String
+getLinksWith :: EvalMap -> FilePath -> FilePath -> IO [Link]
+getLinksWith eval dirPath filePath = do  -- note the order
+  str <- readFile filePath
+  return $ parseLinks eval dirPath str
 
----- String <-> [Link]
 
-parseLinks :: EvalMap -> FilePath -> String -> [Link]
-parseLinks eval cd = map (evaluateLink eval cd) . mapMaybe readLink . lines
+---- File Writing
 
-formatLinks :: CompMap -> FilePath -> [Link] -> String
-formatLinks comp cd = unlines . map showLink . map (compressLink comp cd)
+-- Takes a directory or file path and appends some links to its .links file
+appendLinksNear :: CompMap -> [Link] -> FilePath -> IO ()
+appendLinksNear comp links path = getNearestDir path >>= appendLinksIn comp links
 
+-- Takes a .links file and adds some links to it
+appendLinks :: CompMap -> [Link] -> FilePath -> IO ()
+appendLinks comp links filePath = appendLinksWith comp links dirPath filePath
+  where dirPath = takeDirectory filePath
+
+-- Takes a directory path and does the same
+appendLinksIn :: CompMap -> [Link] -> FilePath -> IO ()
+appendLinksIn comp links dirPath = appendLinksWith comp links dirPath filePath
+  where filePath = appendDotLink dirPath
+
+-- like formatLinks but appends as lines to a file
+appendLinksWith :: CompMap -> [Link] -> FilePath -> FilePath -> IO ()
+appendLinksWith comp links dirPath filePath = do
+  exists <- doesFileExist filePath
+  let join = if exists then "\n"
+                       else ""
+  appendFile filePath $ join ++ str
+  where str = formatLinks comp dirPath links

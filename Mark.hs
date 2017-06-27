@@ -8,7 +8,8 @@ import System.Directory
 import Control.Monad
 
 import PathCompression
-import LinkIO
+import LinkParsing (Link((:=>:)))
+import LinkIO (appendLinksNear)
 
 --mark folder(s) for linking
 main :: IO ()
@@ -18,18 +19,5 @@ main = do
   forM_ externs $ markEach comp
 
 markEach :: CompMap -> FilePath -> IO ()
-markEach comp path = do
-  pathIsFile <- doesFileExist path
-  let dirPath = if pathIsFile then takeDirectory path
-                              else path
-  let dotLinkPath = dirPath </> "" <.> "links"
-  let linkLine = showLink . compressLink comp dirPath $ path :=>: path
-  appendFile' dotLinkPath linkLine
-
-appendFile' :: FilePath -> String -> IO ()
-appendFile' file str = do
-  exists <- doesFileExist file
-  let join = if exists then "\n"
-                       else ""
-  appendFile file $ join ++ str
+markEach comp path = appendLinksNear comp [path :=>: path] path
 
