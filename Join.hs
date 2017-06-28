@@ -3,7 +3,8 @@ module Join (main) where
 import Control.Monad
 
 import System.Environment
-import System.Directory
+import System.Directory (doesFileExist, listDirectory)
+import System.FilePath (normalise, (</>))
 
 import PathCompression
 import LinkParsing
@@ -17,9 +18,7 @@ main = do
 
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
 joinEach comp eval root = do
-  children <- listDirectory root
-  linkss <- forM children $ getLinksOrRecurse eval
-  let links = concat linkss
+  links <- catCallContents root $ getLinksOrRecurse eval
   appendLinksIn comp links root
 
 getLinksOrRecurse :: EvalMap -> FilePath -> IO [Link]
@@ -31,9 +30,11 @@ getLinksOrRecurse eval path = do
       mDotLink <- getDotLinkIn path
       case mDotLink of
         Just dotLink -> getLinksFrom eval dotLink
-        Nothing -> do
-          children <- listDirectory path
-          resultss <- forM children $ getLinksOrRecurse eval
-          return $ concat resultss
-  
-  
+        Nothing -> catCallContents path $ getLinksOrRecurse eval
+
+catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
+catCallContents path action = do
+  contents <- listDirectory path
+  let absContents = map (\ name -> normalise $ path </> name) contents
+  linkss <- forM absContents action  -- in theory these don't have to be links
+  return $ concat linkss
