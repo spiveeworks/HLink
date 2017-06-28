@@ -3,7 +3,7 @@ module Join (main) where
 import Control.Monad
 
 import System.Environment
-import System.Directory (doesFileExist, listDirectory)
+import System.Directory (doesFileExist, listDirectory, removeFile)
 import System.FilePath (normalise, (</>))
 
 import PathCompression
@@ -29,7 +29,10 @@ getLinksOrRecurse eval path = do
     else do
       mDotLink <- getDotLinkIn path
       case mDotLink of
-        Just dotLink -> getLinksFrom eval dotLink
+        Just dotLink -> do
+          links <- getLinksFrom eval dotLink
+          length links `seq` removeFile dotLink
+          return links
         Nothing -> catCallContents path $ getLinksOrRecurse eval
 
 catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
