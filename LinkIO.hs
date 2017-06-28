@@ -12,6 +12,7 @@ module LinkIO
 , appendLinksWith
 ) where
 
+import System.IO
 import System.Directory
 import System.FilePath
 
@@ -86,7 +87,18 @@ appendLinksIn comp links dirPath = appendLinksWith comp links dirPath filePath
 appendLinksWith :: CompMap -> [Link] -> FilePath -> FilePath -> IO ()
 appendLinksWith comp links dirPath filePath = do
   exists <- doesFileExist filePath
-  let join = if exists then "\n"
-                       else ""
+  lastChar <- if exists then getLastChar filePath
+                        else return '\n'  -- mainly so that it doesn't throw
+  let join = if lastChar /= '\n' then "\n"
+                                 else ""
   appendFile filePath $ join ++ str
   where str = formatLinks comp dirPath links
+
+
+getLastChar :: FilePath -> IO Char
+getLastChar path = withFile path ReadMode getLastChar'
+
+getLastChar' :: Handle -> IO Char
+getLastChar' hFile = do
+  hSeek hFile SeekFromEnd (-1)
+  hGetChar hFile
