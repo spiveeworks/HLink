@@ -22,8 +22,11 @@ import System.FilePath
 
 import PathCompression
 
-data RelativeLink = FilePath' :->: FilePath -- compressed source and relative dest
-data Link         = FilePath  :=>: FilePath -- valid source and absolute destination
+-- compressed source and relative dest
+data RelativeLink = FilePath' :->: FilePath
+-- valid source and absolute destination
+data Link         = FilePath  :=>: FilePath
+
 
 ------ Link Conversion
 

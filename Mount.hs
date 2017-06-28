@@ -11,7 +11,7 @@ import Data.Maybe (isJust)
 
 import PathCompression
 import LinkParsing (Link((:=>:)))
-import LinkIO (getLinks)
+import LinkIO (getLinksNear)
 
 main :: IO ()
 main = do
@@ -21,7 +21,7 @@ main = do
 
 mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
-  instructions <- getLinks eval path
+  instructions <- getLinksNear eval path
   forM_ instructions attemptLink
 
 
@@ -61,4 +61,4 @@ removeLink path = do
     then removeDirectoryLink path
     else removeFile path
 
-      
+

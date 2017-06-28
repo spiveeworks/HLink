@@ -2,12 +2,12 @@ module LinkIO
 ( getDotLinkIn
 
 , getLinksNear
-, getLinks
+, getLinksFrom
 , getLinksIn
 , getLinksWith
 
 , appendLinksNear
-, appendLinks
+, appendLinksTo
 , appendLinksIn
 , appendLinksWith
 ) where
@@ -48,8 +48,8 @@ getLinksNear :: EvalMap -> FilePath -> IO [Link]
 getLinksNear eval path = getNearestDir path >>= getLinksIn eval
 
 -- Takes a .links file and parses it
-getLinks :: EvalMap -> FilePath -> IO [Link]
-getLinks eval filePath = getLinksWith eval dirPath filePath
+getLinksFrom :: EvalMap -> FilePath -> IO [Link]
+getLinksFrom eval filePath = getLinksWith eval dirPath filePath
   where dirPath = takeDirectory filePath
 
 -- Takes a directory and parses a contained .links if any
@@ -74,8 +74,8 @@ appendLinksNear :: CompMap -> [Link] -> FilePath -> IO ()
 appendLinksNear comp links path = getNearestDir path >>= appendLinksIn comp links
 
 -- Takes a .links file and adds some links to it
-appendLinks :: CompMap -> [Link] -> FilePath -> IO ()
-appendLinks comp links filePath = appendLinksWith comp links dirPath filePath
+appendLinksTo :: CompMap -> [Link] -> FilePath -> IO ()
+appendLinksTo comp links filePath = appendLinksWith comp links dirPath filePath
   where dirPath = takeDirectory filePath
 
 -- Takes a directory path and does the same
