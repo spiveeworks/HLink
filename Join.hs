@@ -30,7 +30,7 @@ getLinksOrRecurse eval path = do
     else do
       mDotLink <- getDotLinkIn path
       case mDotLink of
-        Just dotLink -> getLinks eval dotLink
+        Just dotLink -> getLinksFrom eval dotLink
         Nothing -> do
           children <- listDirectory path
           resultss <- forM children $ getLinksOrRecurse eval
