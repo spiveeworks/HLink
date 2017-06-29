@@ -3,8 +3,8 @@ module Join (main) where
 import Control.Monad
 
 import System.Environment
-import System.Directory (doesFileExist, listDirectory, removeFile)
-import System.FilePath (normalise, (</>))
+import System.Directory
+import System.FilePath
 
 import PathCompression
 import LinkParsing
@@ -18,13 +18,15 @@ main = do
 
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
 joinEach comp eval root = do
-  links <- catCallContents root $ getLinksOrRecurse eval
+  links <- catCallContents root $ getLinksOrRecurse eval root
   appendLinksIn comp links root
 
-getLinksOrRecurse :: EvalMap -> FilePath -> IO [Link]
-getLinksOrRecurse eval path = do
-  isFile <- doesFileExist path
-  if isFile
+getLinksOrRecurse :: EvalMap -> FilePath -> FilePath -> IO [Link]
+getLinksOrRecurse eval root path = do
+  isFile <- doesFileExist path       -- there is nothing we can do with a file
+  isLink <- pathIsSymbolicLink path  -- on one hand we don't want loops, 
+                                     -- on the other the target could be intended as separate
+  if isFile || isLink
     then return []
     else do
       mDotLink <- getDotLinkIn path
@@ -32,8 +34,13 @@ getLinksOrRecurse eval path = do
         Just dotLink -> do
           links <- getLinksFrom eval dotLink
           length links `seq` removeFile dotLink
-          return links
-        Nothing -> catCallContents path $ getLinksOrRecurse eval
+          return $ map adjust links
+        Nothing -> catCallContents path $ getLinksOrRecurse eval root
+  where adjust link@(source :=>: dest)
+          | isRelative source = (normalise $ path' </> source) :=>: dest
+          | otherwise = link
+        path' = makeRelative root path
+
 
 catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
 catCallContents path action = do
