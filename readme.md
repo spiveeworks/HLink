@@ -73,3 +73,23 @@ Often you can use hLink generated symlinks to manipulate the paths of folders be
 
 Note that `mark` behaves literally when given relative paths, you should use `%CD%` or `$PWD` unless you are hacking.
 
+Join
+----
+
+Join combines multiple `.links` files, adjusting their paths to be relative to some common ancestor.
+
+Run `join` on each of the parents you would like to join, and then the `.links` files in each one will be pulled to their parent, saving you future `mount` actions, and hiding the `.links` files from the links themselves.
+The old `.links` files will be deleted as they are read, so if `join` crashes halfway through running, those files will be gone but the new `.links` file won't be written. (so sad)
+If there is already a `.links` file in the folder passed to `join` then it will be appended to, not truncated.
+
+Currently this will create an empty `.links` file if there are no valid links defined within the folder or its children. (containing a single newline)
+
+I have not tested this when it is passed relative paths, it may break things.
+
+Currently `join` does not handle relative links, only relative targets.
+This has been fixed but won't be released until `mount` can even handle relative targets!
+
+`join` will not look inside symlinks, but will recurse depth first on the entire directroy tree of the folder passed to it.
+
+`join` however skips subfolders of a folder that has a `.links` file in it, so you can use empty `.links` files to protect nested `.links` files in some situations, and you can run `join` multiple times to get around this.
+This does not apply to the root folder, its subfolders are explored even if it has a `.links` file, since this file is appended to, not deleted.
