@@ -27,7 +27,7 @@ import Control.Monad (liftM, mapM)
 
 import System.FilePath
 import System.Environment (lookupEnv)
-import System.Directory (doesFileExist)
+import System.Directory (findFile)
 
 
 type FilePath' = String
@@ -83,23 +83,15 @@ getLinkPath = liftM fromJust findLinkPath
 findLinkPath :: IO (Maybe FilePath)
 findLinkPath = do
   envPath <- lookupEnv "hLinkPath"
-  foundPaths <- searchLinkPaths
-  return $ foldr orElse Nothing $ envPath : foundPaths
-
+  case envPath of
+    Just path -> return envPath
+    Nothing   -> searchLinkPaths
 
 -- search paths for .hLinks
-searchLinkPaths :: IO [Maybe FilePath]
-searchLinkPaths = getSearchPath >>= mapM checkLinkPath
-
-
--- check if .hLinks is at a path and if it is return the .hLinks path
-checkLinkPath :: FilePath -> IO (Maybe FilePath)
-checkLinkPath path = do
-  isGoodPath <- doesFileExist hLinksPath
-  if isGoodPath
-     then return $ Just hLinksPath
-     else return Nothing
-  where hLinksPath = path </> "" <.> "hLink"
+searchLinkPaths :: IO (Maybe FilePath)
+searchLinkPaths = do
+  paths <- getSearchPath
+  findFile paths ("" <.> "hLink")
 
 
 
