@@ -29,6 +29,7 @@ mountEach eval path = do
 attemptLink :: Link -> IO ()
 attemptLink (source :=>: dest) = do
   is_used <- doesPathExist source
+  unless is_used $ createDirectoryIfMissing True $ takeDirectory source
   is_available <- if is_used
                     then clearIfSymbolicAndPrint source
                     else return True
