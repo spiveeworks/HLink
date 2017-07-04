@@ -1,8 +1,6 @@
 module Mount (main) where
 
-import System.Environment
-import System.IO
-import System.FilePath
+import System.FilePath(takeDirectory)
 import System.Directory
 
 import Control.Monad
@@ -13,10 +11,9 @@ import PathCompression
 import LinkParsing (Link((:=>:)))
 import LinkIO (getLinksNear)
 
-main :: IO ()
-main = do
+main :: [String] -> IO ()
+main args = do
   (comp, eval) <- getPathMaps
-  args <- getArgs
   forM_ args $ mountEach eval
 
 mountEach :: EvalMap -> FilePath -> IO ()
