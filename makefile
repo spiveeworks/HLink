@@ -1,27 +1,40 @@
-HLINK=mark mount join
-MISC=compressPaths
+#           #
+# Variables #
+#           #
+
+_HLINK=mark mount join
+_MISC=compressPaths
+
+HLINK=$(_HLINK:%,binaries/%)
+MISC=$(_MISC:%,binaries/%)
 
 
-all: hlink misc
+#                  #
+# Production Rules #
+#                  #
 
-hlink: $(HLINK)
+# Useful Names
+
+all: hLink hLinkAlias misc
+
+hLinkAlias: $(HLINK)
 misc: $(MISC)
 
-$(HLINK) $(MISC):
-	ghc -outputdir output -o binaries/$@ --make Main.hs -main-is $@
+# Production
 
+$(HLINK) $(MISC): Alias.hs
+	ghc -outputdir output/alias -o $@ --make Alias.hs -main-is $@F
 
-#       #
-# HLink #
-#       #
-
+hLink:
+	ghc -outputdir output -o binaries/hLink --make Main.hs
 
 
 #            #
 # make stuff #
 #            #
 
-.PHONY: clean all hlink misc $(HLINK) $(MISC)  # lol everything
+.PHONY: clean all hLink hLinkAlias misc
 
 clean:
 	rm -f $(ODIR)/* *~ core $(INCDIR)/*~
+

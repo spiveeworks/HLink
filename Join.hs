@@ -2,18 +2,16 @@ module Join (main) where
 
 import Control.Monad
 
-import System.Environment
 import System.Directory (doesFileExist, listDirectory, removeFile)
 import System.FilePath (normalise, (</>))
 
 import PathCompression
-import LinkParsing
+import LinkParsing(Link)
 import LinkIO
 
-main :: IO ()
-main = do
+main :: [String] -> IO ()
+main roots = do
   (comp, eval) <- getPathMaps
-  roots <- getArgs
   forM_ roots $ joinEach comp eval
 
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
