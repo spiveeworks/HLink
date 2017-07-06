@@ -40,6 +40,11 @@ type NestMap = [(String, FilePath')]  -- used for parsing/formatting above types
 hLinkSeparator :: Char
 hLinkSeparator = ':'
 
+refHead :: Char
+refHead = '$'
+
+($:) :: FilePath -> FilePath'
+($:) path = refHead : path
 
 ------ impure (file operations)
 
@@ -140,18 +145,15 @@ compressPath paths path = foldr shortingFold path paths
           Nothing -> tryRest
           Just pathTail -> let pathTail' = dropWhile isPathSeparator pathTail
                            in if (not . null) pathTail'
-                                 then basename </> pathTail'
+                                 then ($:) basename </> pathTail'
                                  else tryRest
-        stripPrefixP = stripPrefix . addTrailingPathSeparator          
+        stripPrefixP = stripPrefix . addTrailingPathSeparator
 
 
 evaluatePath :: EvalMap -> FilePath' -> FilePath
-evaluatePath _ "" = ""
-evaluatePath paths path 
-  | hasDrive path || head path `elem` ['.', '~'] = path
-  | otherwise = paths ! pathHead </> dropWhile isPathSeparator pathTail
+evaluatePath paths (c : path)
+  | c == refHead = paths ! pathHead </> dropWhile isPathSeparator pathTail
   where (pathHead, pathTail) = break isPathSeparator path
-
-
+evaluatePath _ path = path
 
 
