@@ -6,7 +6,7 @@ import System.Directory
 import System.FilePath
 
 import PathCompression
-import LinkParsing( Link((:=>:)) )
+import LinkParsing(Link)
 import LinkIO
 
 main :: [String] -> IO ()
@@ -17,7 +17,7 @@ main roots = do
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
 joinEach comp eval root = do
   dotLinksPaths <- catCallContents root getDotLinksPaths
-  linkss <- forM dotLinksPaths $ adjustConsumeLinks eval root
+  linkss <- forM dotLinksPaths $ adjustConsumeLinksInDir eval root . takeDirectory
   let links = concat linkss
   appendLinksIn comp links root
 
@@ -35,16 +35,6 @@ getDotLinksPaths root = do
       case mDotLinks of
         Just dotLinks -> return [dotLinks]
         Nothing -> catCallContents root getDotLinksPaths
-
-adjustConsumeLinks :: EvalMap -> FilePath -> FilePath -> IO [Link]
-adjustConsumeLinks eval root dotLinks = do
-  links <- getLinksFrom eval dotLinks
-  length links `seq` removeFile dotLinks
-  return $ map adjust links
-  where adjust link@(source :=>: dest)
-          | isRelative source = (normalise $ path' </> source) :=>: dest
-          | otherwise = link
-        path' = makeRelative root $ takeDirectory dotLinks
 
 catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
 catCallContents path action = do
