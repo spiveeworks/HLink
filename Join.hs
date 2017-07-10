@@ -5,6 +5,7 @@ import Control.Monad
 import System.Directory
 import System.FilePath
 
+import JoinBase (adjustConsumeLinksInFile)
 import PathCompression
 import LinkParsing(Link)
 import LinkIO
@@ -17,7 +18,7 @@ main roots = do
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
 joinEach comp eval root = do
   dotLinksPaths <- catCallContents root getDotLinksPaths
-  linkss <- forM dotLinksPaths $ adjustConsumeLinksInDir eval root . takeDirectory
+  linkss <- forM dotLinksPaths $ adjustConsumeLinksInFile eval root
   let links = concat linkss
   appendLinksIn comp links root
 

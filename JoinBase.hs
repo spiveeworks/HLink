@@ -1,25 +1,44 @@
-module JoinBase(main) where
+module JoinBase
+( adjustConsumeLinksInFile
+, adjustConsumeLinksInSymLink
+) where
+
+import System.Directory
+import System.FilePath
+
+import PathCompression(EvalMap)
+import LinkParsing( Link((:=>:)) )
+import qualified LinkIO
 
 -- When dealing with a physical directory, use the path as both link and target
-adjustConsumeLinksInDir :: EvalMap -> FilePath -> FilePath -> IO [Link]
-adjustConsumeLinksInDir eval newRoot oldRoot = adjustConsumeLinks eval newRoot oldRoot oldRoot
+-- Basis of the Join action
+adjustConsumeLinksInFile :: EvalMap -> FilePath -> FilePath -> IO [Link]
+adjustConsumeLinksInFile eval newRoot dotLinks = adjustConsumeLinks eval newRoot oldRoot oldRoot dotLinks
+  where oldRoot = takeDirectory dotLinks
+
+
+-- When dealing with a symlink, use the target for interpreting impossible links
+-- This is basically Pull's entire functionality
+adjustConsumeLinksInSymLink :: EvalMap -> FilePath -> FilePath -> IO [Link]
+adjustConsumeLinksInSymLink eval newRoot oldRoot oldTarget = do
+  mDotLinks <- getDotLinkIn oldRoot
+  case mDotLinks of
+    Just dotLinks -> adjustConsumeLinks eval newRoot oldRoot oldTarget dotLinks
+    Nothing -> return []
+
 
 -- Deletes a .links file, but gives you its contents.
 -- Also updates any relative source paths
--- Basis of the Join action
-adjustConsumeLinks :: EvalMap -> FilePath -> FilePath -> FilePath -> IO [Link]
-adjustConsumeLinks eval newRoot oldRoot oldTarget = do
-  mDotLinks <- getDotLinkIn oldRoot
-  case mDotLinks of
-    Just dotLinks -> do
-      links <- getLinksWith eval oldRoot dotLinks
-      length links `seq` removeFile dotLinks
-      return $ map adjust links
-    Nothing -> return []
+adjustConsumeLinks :: EvalMap -> FilePath -> FilePath -> FilePath -> FilePath -> IO [Link]
+adjustConsumeLinks eval newRoot oldRoot oldTarget dotLinks = do
+  links <- LinkIO.getLinksWith eval oldRoot dotLinks
+  length links `seq` removeFile dotLinks
+  return $ map adjust links
   where adjust = adjustLink newRoot oldRoot oldTarget
 
+
 -- Deals with relative sources, updating them to the new root directory
--- If the dest is inside the source then assume the new root is a link, and put new dest inside that link's target.
+-- Dest cannot be inside source, so use another path "oldTarget" to interpret
 adjustLink :: FilePath -> FilePath -> FilePath -> Link -> Link
 adjustLink newRoot oldRoot oldTarget link@(source :=>: dest)
   | isAbsolute source = link  -- nothing to change, working with an explicit link
@@ -29,5 +48,4 @@ adjustLink newRoot oldRoot oldTarget link@(source :=>: dest)
         sourceFromRoot = normalise $ deltaRoot </> source
         destViaTarget = normalise . (oldTarget </>) . makeRelative root $ dest
         deltaRoot = makeRelative root $ takeDirectory dotLinks  -- path to old root from new root
-
 
