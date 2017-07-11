@@ -1,6 +1,6 @@
 module Mount (main) where
 
-import System.FilePath(takeDirectory)
+import System.FilePath(takeDirectory, dropTrailingPathSeparator, (</>))
 import System.Directory
 
 import Control.Monad
@@ -19,22 +19,23 @@ main args = do
 mountEach :: EvalMap -> FilePath -> IO ()
 mountEach eval path = do
   instructions <- getLinksNear eval path
-  forM_ instructions attemptLink
+  forM_ instructions $ attemptLink path
 
 
 -- Creates a symbolic link as requested, unless something other than a symbolic link is in the way.
-attemptLink :: Link -> IO ()
-attemptLink (source :=>: dest) = do
-  is_used <- doesPathExist source
-  unless is_used $ createDirectoryIfMissing True $ takeDirectory source
+attemptLink :: FilePath -> Link -> IO ()
+attemptLink path (source :=>: dest) = do
+  is_used <- doesPathExist source'
+  unless is_used $ createDirectoryIfMissing True $ takeDirectory $ dropTrailingPathSeparator source'
   is_available <- if is_used
-                    then clearIfSymbolicAndPrint source
+                    then clearIfSymbolicAndPrint
                     else return True
   when is_available $ do
-    createDirectoryLink dest source
+    createDirectoryLink dest source'
     putStrLn $ "Successfully created link at " ++ source
- where clearIfSymbolicAndPrint source = do
-         m_old_dest <- clearIfSymbolic source
+ where source' = path </> source
+       clearIfSymbolicAndPrint = do
+         m_old_dest <- clearIfSymbolic source'
          putStrLn $ case m_old_dest of
            Just old_dest -> "Removed old link: " ++ source ++ " -> " ++ old_dest
            Nothing -> "Failed to create link at: " ++ source
