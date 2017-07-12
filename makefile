@@ -2,12 +2,8 @@
 # Variables #
 #           #
 
-_HLINK=mark mount join
-_MISC=compressPaths
-
-HLINK=$(_HLINK:%,binaries/%)
-MISC=$(_MISC:%,binaries/%)
-
+HLINK=mark mount join pull
+MISC=compressPaths
 
 #                  #
 # Production Rules #
@@ -23,7 +19,7 @@ misc: $(MISC)
 # Production
 
 $(HLINK) $(MISC): Alias.hs
-	ghc -outputdir output/alias -o $@ --make Alias.hs -main-is $@F
+	ghc -outputdir output/alias -o binaries/$@ --make Alias.hs -main-is $@
 
 hLink:
 	ghc -outputdir output -o binaries/hLink --make Main.hs
@@ -33,7 +29,7 @@ hLink:
 # make stuff #
 #            #
 
-.PHONY: clean all hLink hLinkAlias misc
+.PHONY: clean all hLink hLinkAlias misc $(HLINK) $(MISC)
 
 clean:
 	rm -f $(ODIR)/* *~ core $(INCDIR)/*~
