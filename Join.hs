@@ -1,10 +1,11 @@
-module Join (main) where
+module Join(main) where
 
 import Control.Monad
 
-import System.Directory (doesFileExist, listDirectory, removeFile)
-import System.FilePath (normalise, (</>))
+import System.Directory
+import System.FilePath
 
+import JoinBase (adjustConsumeLinksInFile)
 import PathCompression
 import LinkParsing(Link)
 import LinkIO
@@ -16,26 +17,29 @@ main roots = do
 
 joinEach :: CompMap -> EvalMap -> FilePath -> IO ()
 joinEach comp eval root = do
-  links <- catCallContents root $ getLinksOrRecurse eval
+  dotLinksPaths <- catCallContents root getDotLinksPaths
+  linkss <- forM dotLinksPaths $ adjustConsumeLinksInFile eval root
+  let links = concat linkss
   appendLinksIn comp links root
 
-getLinksOrRecurse :: EvalMap -> FilePath -> IO [Link]
-getLinksOrRecurse eval path = do
-  isFile <- doesFileExist path
-  if isFile
+
+
+getDotLinksPaths :: FilePath -> IO [FilePath]
+getDotLinksPaths root = do
+  isFile <- doesFileExist root      -- there is nothing we can do with a file
+  isLink <- pathIsSymbolicLink root -- on one hand we don't want loops, 
+                                    -- on the other the target could be intended as separate
+  if isFile || isLink
     then return []
     else do
-      mDotLink <- getDotLinkIn path
-      case mDotLink of
-        Just dotLink -> do
-          links <- getLinksFrom eval dotLink
-          length links `seq` removeFile dotLink
-          return links
-        Nothing -> catCallContents path $ getLinksOrRecurse eval
+      mDotLinks <- getDotLinkIn root
+      case mDotLinks of
+        Just dotLinks -> return [dotLinks]
+        Nothing -> catCallContents root getDotLinksPaths
 
 catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
 catCallContents path action = do
   contents <- listDirectory path
-  let absContents = map (\ name -> normalise $ path </> name) contents
-  linkss <- forM absContents action  -- in theory these don't have to be links
-  return $ concat linkss
+  let absContents = map (normalise . (path </>)) contents
+  resultss <- mapM action absContents
+  return $ concat resultss
