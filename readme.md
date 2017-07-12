@@ -10,14 +10,14 @@ Alternatively you can use them as commands for combining multiple linking tasks 
 .LINKS
 ------
 
-hLink stores its information in `.links` files near the targets of your links. 
+hLink stores its information in `.links` files near the targets of your links.
 It has a simple format, lines of the format
 ```<link> -> <target>```
 
 note that single paths can fill a line in the file as well, the target is `.` by default.
 
-The targets are specified relative to the folder in which the file resides.
-Eventually the link targets can be specified as such as well, if they begin with `.`, but for now they start with either the system root (or a drive) or they start with a hLink reference.
+The targets are specified relative to the folder in which the file resides. (without hLink references)
+Eventually the link locations can be specified as such as well, if they begin with `.`, but for now they start with either the system root (or a drive) or they start with a hLink reference.
 
 .hLink
 ------
@@ -28,15 +28,25 @@ References make hLink more portable, and further reduce the friction in moving f
 You can store a `.hLink` file anywhere accessible by your search path, and fill it with lines of the form
 ```<refname>: path```
 
+You can also set the environment variable `hLinkPath` to a full filepath, in which case the search path won't be used.
+
 Then all of your `.links` files will store paths relative to the longest relevant reference in your `.hLink` file.
+References must be the first term in the filepath, and start with a dollar sign `$`, such that the following is also a valid .hLink:
+```User: C:\Users\User
+APPDATA: $APPDATA\appdata\roaming```
 
 This has two main uses:
-Firstly, you can make references for common environment variables, and use these references to mount the same folders on two computers.
+Firstly, you can make references for common environment variables, and use these references to mount the same folders on two computers. (Or two operating systems)
 Secondly, you can make references to an installation you will want to move, (or to an index you will want to restructure) and then by changing your `.hLink` file you save yourself the hassle of remaking all of your `.links` files.
+
+Currently a program called `CompressPaths` exists, which takes a valid `.hLink` file, and reorders and rewrites its contents to work in terms of other entries in the file.
+More sophisticated users of `.hLink` may want to avoid this program, as it may not choose between multiple aliases of the same path in a desirable way.
 
 In the future I may make a program for generating `.hLink` out of environment variables.
 
 Another missing feature is recompressing existing `.links` files, so if you are going to use `.hLink` use it early!
+
+Additional possible features would be having multiple `.hLink` files read simultaneously, (whereas currently the first found is used) as well as `old.hLink` files which are used for decompressing but not for recompressing paths.
 
 Commands
 ========

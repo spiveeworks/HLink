@@ -1,17 +1,13 @@
 module CompressPaths (main) where
 
-import System.Environment
-import System.IO
 import System.Directory
 
 import Control.Monad
 
 import PathCompression
 
-main :: IO ()
-main = do
-  externs <- getArgs
-  forM_ externs compressEach
+main :: [String] -> IO ()
+main = mapM_ compressEach
 
 compressEach :: FilePath -> IO ()
 compressEach extern = do
