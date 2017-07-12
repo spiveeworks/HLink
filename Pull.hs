@@ -1,4 +1,4 @@
-module Join(main) where
+module Pull(main) where
 
 import Control.Monad
 
@@ -8,6 +8,7 @@ import System.FilePath
 import PathCompression
 import LinkParsing(Link)
 import LinkIO
+import JoinBase(adjustConsumeLinksInSymLink)
 
 main :: [String] -> IO ()
 main roots = do
@@ -18,9 +19,9 @@ pullEach :: CompMap -> EvalMap -> FilePath -> IO ()
 pullEach comp eval oldRoot = do
   let newRoot = takeDirectory oldRoot
   isLink <- pathIsSymbolicLink oldRoot
-  oldTarget <- if isLink then getLinkTarget oldRoot
+  oldTarget <- if isLink then getSymbolicLinkTarget oldRoot
                          else return oldRoot
-  links <- adjustConsumeLinks eval newRoot oldRoot oldTarget
+  links <- adjustConsumeLinksInSymLink eval newRoot oldRoot oldTarget
   appendLinksIn comp links newRoot
 
 
