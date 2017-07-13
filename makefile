@@ -2,7 +2,7 @@
 # Variables #
 #           #
 
-HLINK=mark mount join pull
+HLINK=mark mount join pull block
 MISC=compressPaths
 
 #                  #

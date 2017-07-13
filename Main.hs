@@ -10,6 +10,7 @@ import qualified Mark
 import qualified Mount
 import qualified Join
 import qualified Pull
+import qualified Block
 
 import qualified CompressPaths
 
@@ -25,6 +26,7 @@ dispatch2 "MARK"     = Mark.main
 dispatch2 "MOUNT"    = Mount.main
 dispatch2 "JOIN"     = Join.main
 dispatch2 "PULL"     = Pull.main
+dispatch2 "BLOCK"    = Block.main
 dispatch2 "COMPRESS" = CompressPaths.main
 dispatch2 _          = \_ -> putStrLn "Use \"mark\", \"mount\", \"join\", or \"compress\" as first argument. "
 

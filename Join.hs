@@ -32,10 +32,14 @@ getDotLinksPaths root = do
   if isFile || isLink
     then return []
     else do
-      mDotLinks <- getDotLinkIn root
-      case mDotLinks of
-        Just dotLinks -> return [dotLinks]
-        Nothing -> catCallContents root getDotLinksPaths
+      isBlocked <- doesFileExist $ root </> "block" <.> "links"
+      if isBlocked
+        then return []
+        else do
+          mDotLinks <- getDotLinkIn root
+          case mDotLinks of
+            Just dotLinks -> return [dotLinks]
+            Nothing -> catCallContents root getDotLinksPaths
 
 catCallContents :: FilePath -> (FilePath -> IO [a]) -> IO [a]
 catCallContents path action = do
